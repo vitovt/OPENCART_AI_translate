@@ -10,6 +10,10 @@
  *   php translate_categories.php [--no-dry-run] [--verbose] [--source-lang-id=2] [--dest-lang-id=3]
  */
 
+$STORE_TYPE = 'sports equipment and accessories';
+$SRC_LANG = 'Russian';
+$DST_LANG = 'Ukrainian';
+
 // 1. Parse CLI options
 $options = getopt('', [
     'no-dry-run',
@@ -100,8 +104,8 @@ foreach ($rows as $row) {
     $messages = [
         [
             'role'    => 'system',
-            'content' => 'You are a translation assistant for a sports equipment and accessories store. ' .
-                         'Translate the following JSON from Russian to Ukrainian. ' .
+            'content' => 'You are a translation assistant for a ' . $STORE_TYPE . ' store. ' .
+                         'Translate the following JSON from ' . $SRC_LANG . ' to ' . $DST_LANG . '. ' .
                          'Preserve JSON structure; translate only values; leave empty fields empty.'
         ],
         [
