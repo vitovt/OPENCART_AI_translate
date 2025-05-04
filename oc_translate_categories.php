@@ -42,7 +42,8 @@ $host   = DB_HOSTNAME;
 $user   = DB_USERNAME;
 $pass   = DB_PASSWORD;
 $dbname = DB_DATABASE;
-$port   = DB_PORT;\$prefix = DB_PREFIX;
+$port   = DB_PORT;
+$prefix = DB_PREFIX;
 
 // 3. Connect via PDO
 $dsn = "mysql:host={$host};dbname={$dbname};port={$port};charset=utf8mb4";
