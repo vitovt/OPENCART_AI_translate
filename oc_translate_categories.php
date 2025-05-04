@@ -137,7 +137,7 @@ foreach ($rows as $row) {
     curl_close($ch);
 
     $decoded = json_decode($resp, true);
-    $content = $decoded['choices'][0]['message']['content'] ?? '';
+    $content = isset($data['choices'][0]['message']['content']) ? $data['choices'][0]['message']['content'] : '';
     $translated = json_decode($content, true);
     if (!is_array($translated)) {
         fwrite(STDERR, "Invalid JSON for Cat {$catId}: " . substr($content,0,200) . "\n");
@@ -146,7 +146,7 @@ foreach ($rows as $row) {
 
     // Upsert into DB
     $fields = array_keys($payload);
-    $setClauses = array_map(fn($f)=>"`{$f}`=:{\$f}", $fields);
+    $setClauses = array_map(function($f) { return "`{$f}`=:{$f}"; }, $fields);
     $setClauses[] = "language_id=:dest";
     $setClauses[] = "category_id=:cid";
 
@@ -159,7 +159,7 @@ foreach ($rows as $row) {
         $stm = $pdo->prepare($sqlUp);
     } else {
         $cols = array_merge($fields, ['language_id','category_id']);
-        $phs = array_map(fn($c)=>":{$c}", $cols);
+        $phs = array_map(function($c) { return ":{$c}"; }, $cols);
         $sqlUp = "INSERT INTO {$prefix}category_description (`" . implode('`,`',$cols) . "`) VALUES (".
                  implode(',',$phs) . ")";
         $stm = $pdo->prepare($sqlUp);
@@ -167,11 +167,11 @@ foreach ($rows as $row) {
 
     $params = [':dest'=>$destLangId, ':cid'=>$catId];
     foreach ($fields as $f) {
-        $params[":{$f}"] = $translated[$f] ?? '';
+        $params[":{$f}"] = isset($translated[$f]) ? $translated[$f] : '';
     }
     $stm->execute($params);
     if ($verbose) echo "done.\n";
 }
 
 echo "Processed {$count}/{$total} categories.\n";
-
+?>
