@@ -56,6 +56,20 @@ Write a PHP script that translates OpenCart category descriptions from Russian t
 
    * Include helpful logging and error messages to assist with manual execution and troubleshooting.
 
+
+Here is example with correct format of config.php
+
+```
+// DB
+define('DB_DRIVER', 'mysqli');
+define('DB_HOSTNAME', 'hostname.mysql.tools');
+define('DB_USERNAME', 'dbusername');
+define('DB_PASSWORD', 'dbpass');
+define('DB_DATABASE', 'dbname');
+define('DB_PORT', '3306');
+define('DB_PREFIX', 'oc_');
+```
+
 Here are more details about my database:
 
 ```

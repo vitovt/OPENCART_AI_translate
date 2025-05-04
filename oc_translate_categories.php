@@ -22,20 +22,29 @@ $verbose     = isset($options['verbose']);
 $srcLangId   = isset($options['source-lang-id']) ? (int)$options['source-lang-id'] : 2;
 $destLangId  = isset($options['dest-lang-id'])   ? (int)$options['dest-lang-id']   : 3;
 
-// 2. Load DB config
+// 2. Load OpenCart config
 $configFile = __DIR__ . '/config.php';
 if (!file_exists($configFile)) {
     fwrite(STDERR, "ERROR: config.php not found.\n");
     exit(1);
 }
-$dbConfig = require $configFile;
-$host   = $dbConfig['host'] ?? '127.0.0.1';
-$dbname = $dbConfig['name'] ?? die("Missing 'name' in config.php\n");
-$user   = $dbConfig['user'] ?? die("Missing 'user' in config.php\n");
-$pass   = $dbConfig['pass'] ?? '';
-$port   = $dbConfig['port'] ?? 3306;
+require $configFile; // defines DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE, DB_PORT, DB_PREFIX
 
-// 3. Connect to the database
+// Validate config constants
+foreach (['DB_HOSTNAME','DB_USERNAME','DB_PASSWORD','DB_DATABASE','DB_PORT','DB_PREFIX'] as $const) {
+    if (!defined($const)) {
+        fwrite(STDERR, "ERROR: {$const} not defined in config.php\n");
+        exit(1);
+    }
+}
+
+$host   = DB_HOSTNAME;
+$user   = DB_USERNAME;
+$pass   = DB_PASSWORD;
+$dbname = DB_DATABASE;
+$port   = DB_PORT;\$prefix = DB_PREFIX;
+
+// 3. Connect via PDO
 $dsn = "mysql:host={$host};dbname={$dbname};port={$port};charset=utf8mb4";
 try {
     $pdo = new PDO($dsn, $user, $pass, [
@@ -46,10 +55,9 @@ try {
     exit(1);
 }
 
-// 4. Fetch source-language rows
-$sql = "SELECT category_id, name, description, description_bottom,
-               meta_title, meta_description, meta_keyword, meta_h1
-        FROM oc_category_description
+// 4. Fetch source rows
+$sql = "SELECT category_id, name, description, description_bottom, meta_title, meta_description, meta_keyword, meta_h1
+        FROM {$prefix}category_description
         WHERE language_id = :src";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([':src' => $srcLangId]);
@@ -137,38 +145,32 @@ foreach ($rows as $row) {
 
     // Upsert into DB
     $fields = array_keys($payload);
-    // prepare SET clauses
-    $setParts = array_map(fn($f) => "`{$f}` = :{$f}", $fields);
-    $setParts[] = "`language_id` = :dest";
-    $setParts[] = "`category_id` = :cid";
+    $setClauses = array_map(fn($f)=>"`{$f}`=:{\$f}", $fields);
+    $setClauses[] = "language_id=:dest";
+    $setClauses[] = "category_id=:cid";
 
-    // check existing
-    $check = $pdo->prepare("SELECT 1 FROM oc_category_description WHERE category_id=:cid AND language_id=:dest");
-    $check->execute([':cid'=>$catId, ':dest'=>$destLangId]);
-
-    if ($check->fetch()) {
-        $sqlUp = "UPDATE oc_category_description SET " . implode(',', $setParts) .
+    // exists?
+    $chk = $pdo->prepare("SELECT 1 FROM {$prefix}category_description WHERE category_id=:cid AND language_id=:dest");
+    $chk->execute([':cid'=>$catId, ':dest'=>$destLangId]);
+    if ($chk->fetch()) {
+        $sqlUp = "UPDATE {$prefix}category_description SET " . implode(',', $setClauses) .
                  " WHERE category_id=:cid AND language_id=:dest";
-        $stmtUp = $pdo->prepare($sqlUp);
-        $params = [':cid'=>$catId, ':dest'=>$destLangId];
-        foreach ($fields as $f) {
-            $params[":{$f}"] = $translated[$f] ?? '';
-        }
-        $stmtUp->execute($params);
-        if ($verbose) echo "updated.\n";
+        $stm = $pdo->prepare($sqlUp);
     } else {
-        $cols  = array_merge($fields, ['language_id','category_id']);
-        $ph    = array_map(fn($c)=>":{$c}", $cols);
-        $sqlIn = "INSERT INTO oc_category_description (`" . implode('`,`',$cols) . "`) VALUES (" . implode(',',$ph) . ")";
-        $stmtIn = $pdo->prepare($sqlIn);
-        $params = [':language_id'=>$destLangId, ':category_id'=>$catId];
-        foreach ($fields as $f) {
-            $params[":{$f}"] = $translated[$f] ?? '';
-        }
-        $stmtIn->execute($params);
-        if ($verbose) echo "inserted.\n";
+        $cols = array_merge($fields, ['language_id','category_id']);
+        $phs = array_map(fn($c)=>":{$c}", $cols);
+        $sqlUp = "INSERT INTO {$prefix}category_description (`" . implode('`,`',$cols) . "`) VALUES (".
+                 implode(',',$phs) . ")";
+        $stm = $pdo->prepare($sqlUp);
     }
+
+    $params = [':dest'=>$destLangId, ':cid'=>$catId];
+    foreach ($fields as $f) {
+        $params[":{$f}"] = $translated[$f] ?? '';
+    }
+    $stm->execute($params);
+    if ($verbose) echo "done.\n";
 }
 
-echo "Translation complete. Processed {$count} categories.\n";
+echo "Processed {$count}/{$total} categories.\n";
 
