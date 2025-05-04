@@ -66,10 +66,6 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $total = count($rows);
 echo "Found {$total} categories with language_id={$srcLangId}.\n";
-if (!$execute) {
-    echo "[DRY RUN] No changes will be made. Use --no-dry-run to execute translations and update DB.\n";
-    exit(0);
-}
 
 // 5. Ensure OpenAI key
 $apiKey = getenv('OPENAI_API_KEY');
@@ -114,6 +110,12 @@ foreach ($rows as $row) {
         ]
     ];
 
+    if ($verbose) {
+        echo '$messages:' . var_export($messages, true);
+    }
+    if (!$execute) {
+        continue;
+    }
     // Call OpenAI API
     $ch = curl_init($openAiUrl);
     curl_setopt_array($ch, [
@@ -169,7 +171,9 @@ foreach ($rows as $row) {
     foreach ($fields as $f) {
         $params[":{$f}"] = isset($translated[$f]) ? $translated[$f] : '';
     }
-    $stm->execute($params);
+    if ($execute) {
+        $stm->execute($params);
+    }
     if ($verbose) echo "done.\n";
 }
 
