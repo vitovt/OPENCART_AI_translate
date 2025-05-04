@@ -1,0 +1,99 @@
+**Role:**
+You are an experienced PHP developer with expertise in OpenCart websites.
+
+**Task:**
+Write a PHP script that translates OpenCart category descriptions from Russian to Ukrainian using the OpenAI ChatGPT API (model gpt-4o).
+
+---
+
+### ✅ Script Requirements
+
+1. **Location & Execution**
+
+   * The script will be placed in the **OpenCart root directory**.
+   * It will be executed using the **PHP CLI**.
+   * The script should be safe to run occasionally — by default, it should perform a dry run without making real changes.
+
+2. **Database Connection**
+
+   * Read MySQL credentials from the local file: `./config.php`.
+   * Connect to the OpenCart database.
+
+3. **Read Source Data**
+
+   * Read data from the `oc_category_description` table.
+   * Filter rows with `language_id = 2` (Russian).
+   * Retrieve the following fields:
+
+     * `name`
+     * `description`
+     * `description_bottom`
+     * `meta_title`
+     * `meta_description`
+     * `meta_keyword`
+     * `meta_h1`
+
+4. **Translation Process**
+
+   * For each category (processed one by one), send a **JSON request** to the **OpenAI ChatGPT API** (model `gpt-4o`).
+   * The JSON must include all the above fields.
+   * Instruct the model to **translate content for a sports equipment and accessories online store** from Russian to Ukrainian.
+   * **Leave empty fields empty** — do not send or translate them.
+
+5. **Database Write**
+
+   * Insert a new row in the same table with `language_id = 3` (Ukrainian).
+   * If a row with `language_id = 3` already exists, **update** it instead.
+
+6. **CLI Options**
+
+   * `--no-dry-run`: Perform the actual translation and update the database. By default, the script runs in dry-run mode (only reads and counts rows; does not call OpenAI or modify the database).
+   * `--verbose`: Print detailed information for each processed row (e.g., category ID, fields being translated).
+   * `--source-lang-id`: Set the source language ID (default: 2).
+   * `--dest-lang-id`: Set the destination language ID (default: 3).
+
+7. **Debug Output**
+
+   * Include helpful logging and error messages to assist with manual execution and troubleshooting.
+
+Here are more details about my database:
+
+```
+mysql> DESCRIBE oc_category; DESCRIBE oc_category_description; 
++---------------+--------------+------+-----+---------+----------------+
+| Field         | Type         | Null | Key | Default | Extra          |
++---------------+--------------+------+-----+---------+----------------+
+| category_id   | int(11)      | NO   | PRI | NULL    | auto_increment |
+| image         | varchar(255) | YES  |     | NULL    |                |
+| menu_icon     | varchar(255) | NO   |     | NULL    |                |
+| parent_id     | int(11)      | NO   | MUL | 0       |                |
+| top           | tinyint(1)   | NO   |     | NULL    |                |
+| sale          | varchar(255) | NO   |     | NULL    |                |
+| column        | int(3)       | NO   |     | NULL    |                |
+| sort_order    | int(3)       | NO   |     | 0       |                |
+| status        | tinyint(1)   | NO   |     | NULL    |                |
+| date_added    | datetime     | NO   |     | NULL    |                |
+| date_modified | datetime     | NO   |     | NULL    |                |
+| left_col      | tinyint(4)   | NO   |     | 0       |                |
+| sizes_image   | varchar(256) | YES  |     | NULL    |                |
+| hide_category | tinyint(4)   | YES  |     | 0       |                |
++---------------+--------------+------+-----+---------+----------------+
+14 rows in set (0.00 sec)
+
++--------------------+--------------+------+-----+---------+-------+
+| Field              | Type         | Null | Key | Default | Extra |
++--------------------+--------------+------+-----+---------+-------+
+| category_id        | int(11)      | NO   | PRI | NULL    |       |
+| language_id        | int(11)      | NO   | PRI | NULL    |       |
+| name               | varchar(255) | NO   |     | NULL    |       |
+| description        | text         | NO   |     | NULL    |       |
+| description_bottom | text         | NO   |     | NULL    |       |
+| meta_title         | varchar(255) | NO   |     | NULL    |       |
+| meta_description   | varchar(255) | NO   |     | NULL    |       |
+| meta_keyword       | varchar(255) | NO   |     | NULL    |       |
+| meta_h1            | varchar(255) | NO   |     | NULL    |       |
+| seoinc             | varchar(255) | NO   |     | NULL    |       |
++--------------------+--------------+------+-----+---------+-------+
+10 rows in set (0.00 sec)
+```
+
