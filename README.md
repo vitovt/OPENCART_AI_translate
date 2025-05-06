@@ -73,5 +73,5 @@ If you find bugs or want new features (e.g. custom HTML handling, batch parallel
 
 ### License
 
-This project is released under the MIT License. Feel free to use and adapt it for your own needs.
+This project is released under the MIT [LICENSE](LICENSE). Feel free to use and adapt it for your own needs.
 
