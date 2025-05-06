@@ -106,7 +106,9 @@ foreach ($rows as $row) {
             'role'    => 'system',
             'content' => 'You are a translation assistant for a ' . $STORE_TYPE . ' store. ' .
                          'Translate the following JSON from ' . $SRC_LANG . ' to ' . $DST_LANG . '. ' .
-                         'Preserve JSON structure; translate only values; leave empty fields empty.'
+                         'Ensure that the HTML content in the description fields is preserved correctly.' .
+                         'Preserve JSON structure; translate only values; leave empty fields empty.' .
+                         'Respond with the translated fields in the same JSON format.'
         ],
         [
             'role'    => 'user',
